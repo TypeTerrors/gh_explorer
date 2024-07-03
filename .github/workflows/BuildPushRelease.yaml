@@ -31,10 +31,16 @@ jobs:
           go mod tidy
           GOARCH=amd64 GOOS=windows go build -o gh_explorer.exe
 
+      - uses: benjlevesque/short-sha@v3.0
+        id: short-sha
+        with:
+          length: 6
+
       - name: Calculate next tag
         id: create_tag
         run: |
-          COMMIT_SHA=$(git rev-parse --short HEAD)
+          ${{ github }}
+          COMMIT_SHA=${{ steps.short-sha.outputs.sha }}
           DATE=$(date +'%Y%m%d')
           UNIX_TIME=$(date +%s)
           HEX_UNIX_TIME=$(printf '%x' $UNIX_TIME)
