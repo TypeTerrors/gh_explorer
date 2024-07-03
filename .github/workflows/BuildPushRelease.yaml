@@ -39,7 +39,6 @@ jobs:
       - name: Calculate next tag
         id: create_tag
         run: |
-          ${{ github }}
           COMMIT_SHA=${{ steps.short-sha.outputs.sha }}
           DATE=$(date +'%Y%m%d')
           UNIX_TIME=$(date +%s)
