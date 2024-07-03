@@ -1,0 +1,72 @@
+name: Go Build Tag and Release
+
+on:
+  push:
+    branches:
+      - main
+      - feature/*
+
+jobs:
+  build-and-release:
+    runs-on: [self-hosted, Linux, X64, gh_explorer]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Build MacOS binary
+        run: |
+          go install
+          go get -v -t -d ./...
+          go mod tidy
+          GOARCH=amd64 GOOS=darwin go build -o gh_explorer
+
+      - name: Build Windows binary
+        run: |
+          go install
+          go get -v -t -d ./...
+          go mod tidy
+          GOARCH=amd64 GOOS=windows go build -o gh_explorer.exe
+
+      - name: Calculate next tag
+        id: create_tag
+        run: |
+          COMMIT_SHA=$(git rev-parse --short HEAD)
+          DATE=$(date +'%Y%m%d')
+          UNIX_TIME=$(date +%s)
+          HEX_UNIX_TIME=$(printf '%x' $UNIX_TIME)
+          echo "tag=v_${COMMIT_SHA}.${HEX_UNIX_TIME}" >> $GITHUB_OUTPUT
+          echo "tagname=${DATE}_${COMMIT_SHA}" >> $GITHUB_OUTPUT
+
+      - name: Create Release
+        if: github.ref == 'refs/heads/main'
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.ACCESS_TOKEN }}
+        with:
+          tag_name: ${{ steps.create_tag.outputs.tag }}
+          release_name: ${{ steps.create_tag.outputs.tagname }}
+          draft: false
+          prerelease: false
+
+      - name: Upload Release for MacOS
+        if: github.ref == 'refs/heads/main'
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.ACCESS_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./gh_explorer
+          asset_name: gh_explorer
+          asset_content_type: application/octet-stream
+
+      - name: Upload Release for Windows
+        if: github.ref == 'refs/heads/main'
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.ACCESS_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./gh_explorer.exe
+          asset_name: gh_explorer.exe
+          asset_content_type: application/octet-stream
