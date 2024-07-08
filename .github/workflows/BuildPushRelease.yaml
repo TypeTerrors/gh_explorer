@@ -8,7 +8,7 @@ on:
 
 jobs:
   build-and-release:
-    runs-on: gh-runners
+    runs-on: type-terrors-arc
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
