@@ -20,14 +20,14 @@ func LoadApplication() tea.Cmd {
 	repo, err := ParseFileToRepos()
 	if err != nil {
 		tools.AnyCmd(ApplicationLoadedMsg{
-			Err:          err,
-			Repos:        nil,
+			Err:   err,
+			Repos: nil,
 		})
 	}
 
 	return tools.AnyCmd(ApplicationLoadedMsg{
-		Err:          err,
-		Repos:        repo,
+		Err:   err,
+		Repos: repo,
 	})
 }
 
@@ -35,9 +35,19 @@ func GetDirectories() ([]string, error) {
 
 	res := []string{}
 	userName := GetUser()
-	dirname := "/Users/" + userName + "/Documents/"+GITHUB_USER+"/"
 
-	entries, err := ioutil.ReadDir(dirname)
+	var repoPath string
+	// if user is specified with an organization than the user takes precedence
+	if GITHUB_ORG != "" && GITHUB_USER != "" {
+		repoPath = "/Users/" + userName + "/Documents/" + GITHUB_USER + "/"
+		// If an organization is specified without a user, use the organization name
+	} else if GITHUB_ORG == "" && GITHUB_USER != "" {
+		repoPath = "/Users/" + userName + "/Documents/" + GITHUB_USER + "/"
+	} else if GITHUB_ORG != "" && GITHUB_USER == "" {
+		repoPath = "/Users/" + userName + "/Documents/" + GITHUB_ORG + "/"
+	}
+
+	entries, err := ioutil.ReadDir(repoPath)
 	for _, entry := range entries {
 		if entry.IsDir() {
 			res = append(res, entry.Name())

@@ -1,14 +1,15 @@
 package services
 
 import (
+	"encoding/json"
 	"explorer/tools"
 	"explorer/types"
-	"encoding/json"
 	"fmt"
 )
 
 var GITHUB_PERSONAL_ACCESS_TOKEN string
 var GITHUB_USER string
+var GITHUB_ORG string
 
 // GetRepoList returns a list of the first 100 repos in the user account
 func GetRepoList() (types.RepoList, error) {
@@ -19,8 +20,17 @@ func GetRepoList() (types.RepoList, error) {
 	}
 
 	urls := []string{
-		"https://api.github.com/user/repos?&per_page=100",
+		// "https://api.github.com/user/repos?&per_page=100",
+	}
 
+	// If both GITHUB_ORG and GITHUB_USER are specified, the user takes precedence
+	if GITHUB_ORG != "" && GITHUB_USER != "" {
+		urls = append(urls, "https://api.github.com/user/repos?&per_page=100")
+		// If an organization is specified without a user, use the organization name
+	} else if GITHUB_ORG == "" && GITHUB_USER != "" {
+		urls = append(urls, "https://api.github.com/user/repos?&per_page=100")
+	} else if GITHUB_ORG != "" && GITHUB_USER == "" {
+		urls = append(urls, "https://api.github.com/orgs/"+GITHUB_ORG+"/repos?&per_page=100")
 	}
 
 	// Channels for results and errors

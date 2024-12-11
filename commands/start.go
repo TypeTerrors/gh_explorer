@@ -205,7 +205,18 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					//return m, tea.Batch(showSelection, GitPull(repoName))
 				} else {
 					m.DidItWork = "Cloned! Repo already exists."
-					repoLink := "https://github.com/"+services.GITHUB_USER+"/" + repoName + ".git"
+					var repoLink string
+
+					// if user is specified with an organization than the user takes precedence
+					if services.GITHUB_ORG != "" && services.GITHUB_USER != "" {
+						repoLink = "https://github.com/" + services.GITHUB_USER + "/" + repoName + ".git"
+						// If an organization is specified without a user, use the organization name
+					} else if services.GITHUB_ORG == "" && services.GITHUB_USER != "" {
+						repoLink = "https://github.com/" + services.GITHUB_USER + "/" + repoName + ".git"
+					} else if services.GITHUB_ORG != "" && services.GITHUB_USER == "" {
+						repoLink = "https://github.com/" + services.GITHUB_ORG + "/" + repoName + ".git"
+					}
+
 					showSelection := m.Lists[m.Focused].NewStatusMessage(StatusMessageStyle(m.DidItWork))
 					cmds = append(cmds, CloneEditor(repoLink, repoName), showSelection)
 					//return m, tea.Batch(showSelection, CloneEditor(repoLink, repoName))
@@ -214,7 +225,20 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "enter":
 			if m.Focused == ChooseRepo {
 				repoName := m.Lists[m.Focused].SelectedItem().FilterValue()
-				repoLink := "https://github.com/"+services.GITHUB_USER+"/" + repoName + ".git"
+				var repoLink string
+
+				// if user is specified with an organization than the user takes precedence
+				if services.GITHUB_ORG != "" && services.GITHUB_USER != "" {
+					repoLink = "https://github.com/" + services.GITHUB_USER + "/" + repoName + ".git"
+					// If an organization is specified without a user, use the organization name
+				} else if services.GITHUB_ORG == "" && services.GITHUB_USER != "" {
+					repoLink = "https://github.com/" + services.GITHUB_USER + "/" + repoName + ".git"
+				} else if services.GITHUB_ORG != "" && services.GITHUB_USER == "" {
+					repoLink = "https://github.com/" + services.GITHUB_ORG + "/" + repoName + ".git"
+				} else {
+					m.DidItWork = "Oops!"
+					// cmds = append(cmds, tea.Quit)
+				}
 
 				folders, err := services.GetDirectories()
 				if err != nil {
@@ -225,11 +249,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				exists := services.CheckDirExist(repoName, folders)
 				if exists {
 					m.DidItWork = "code ."
+					fmt.Println(m.DidItWork)
 					showSelection := m.Lists[m.Focused].NewStatusMessage(StatusMessageStyle(m.DidItWork))
 					cmds = append(cmds, OpenEditor(repoName), showSelection)
 					// return m, tea.Batch(showSelection, OpenEditor(repoName))
 				} else {
 					m.DidItWork = "Git Clone"
+					fmt.Println(m.DidItWork)
 					showSelection := m.Lists[m.Focused].NewStatusMessage(StatusMessageStyle(m.DidItWork))
 					cmds = append(cmds, CloneEditor(repoLink, repoName), showSelection)
 					//return m, tea.Batch(showSelection, CloneEditor(repoLink, repoName))
@@ -281,10 +307,12 @@ func Start() {
 	// Define flags
 	patPtr := flag.String("PAT", "", "Personal Access Token")
 	userPtr := flag.String("USER", "", "github user account")
+	orgPtr := flag.String("ORG", "", "github user account")
 	flag.Parse()
 
 	services.GITHUB_PERSONAL_ACCESS_TOKEN = *patPtr
 	services.GITHUB_USER = *userPtr
+	services.GITHUB_ORG = *orgPtr
 
 	defaultList := list.New([]list.Item{}, list.NewDefaultDelegate(), 0, 0)
 	defaultList.SetShowHelp(false)
